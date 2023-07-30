@@ -1,6 +1,5 @@
 ## TL;DR
-![](https://pasteboard.co/20mRg4CBOdhx.png)
-
+![](https://gcdnb.pbrd.co/images/0QBlkcCyZmtz.png)
 ## Right Corner Diagnostics (helix-like diagnostics in neovim)
 A simplified rework of [right-corner-diagnostics.nvim](https://github.com/santigo-zero/right-corner-diagnostics.nvim) which is a fork of [trld](https://github.com/Mofiqul/trld.nvim).
 
