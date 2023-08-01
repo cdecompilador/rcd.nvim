@@ -5,13 +5,107 @@ M.config = {}
 M.default_config = {}
 
 M.show = function()
-    local split_message = function(message, max_col)
-        local parts = {}
-        for i = 1, #message, max_col do
-            table.insert(parts, message:sub(i, i + max_col - 1))
+    local split = function(str, delimiter)
+        local w = ""
+        local i = 1
+
+        local iterator = function()
+            while i <= #str do
+                local c = str:sub(i, i)
+                i = i + 1
+
+                if c ~= delimiter then
+                    w = w .. c
+                elseif #w > 0 then
+                    local res = w
+                    w = ""
+
+                    return res
+                end
+            end
+
+            if #w > 0 then
+                local res = w
+                w = ""
+
+                return res
+            end
+
+            return nil
         end
 
-        return parts
+        return iterator
+    end
+
+    local words = function(str)
+        return split(str, " ")
+    end
+
+    local map = function(iter, map_fn)
+        local iterator = function()
+            local v = iter()
+
+            if v == nil then
+                return nil
+            end
+
+            return map_fn(v)
+        end
+
+        return iterator
+    end
+ 
+    local group_by_len = function(iter, group_size)
+        local pending = nil
+
+        local total_len = function(l)
+            local acc = 0
+            for _, v in ipairs(l) do
+                acc = acc + #v
+            end
+
+            return acc
+        end
+
+        local iterator = function()
+            local res = {}
+
+            while true do
+                local w
+                if pending == nil then
+                    w = iter()
+                else
+                    w = pending
+                    pending = nil
+                end
+
+                if w == nil then
+                    break
+                end
+
+                if total_len(res) + #w < group_size then
+                    table.insert(res, w)
+                else
+                    pending = w
+
+                    break
+                end
+            end
+            
+            if #res == 0 then
+                return nil
+            else
+                return res
+            end
+        end
+
+        return iterator
+    end
+
+    local split_message = function(str, max_col)
+        return map(group_by_len(words(str), max_col), function(ws)
+            return table.concat(ws, " ")
+        end)
     end
 
     local get_hl_by_severity = function(severity)
@@ -37,6 +131,7 @@ M.show = function()
     local max_col = vim.api.nvim_get_option("columns") * (3 / 4)
     local topline = vim.fn.getwininfo(vim.fn.win_getid())[1].topline
 
+
     -- Delete the old extmarks
     if M.current_extmark_ids then
         for _, id in ipairs(M.current_extmark_ids) do
@@ -60,7 +155,7 @@ M.show = function()
         if #message > max_col then
             local parts = split_message(message, max_col)
 
-            for _, part in ipairs(parts) do
+            for part in parts do
                 table.insert(extmark_diags, { part, hl })
             end
             table.insert(extmark_diags, { "", "" })
